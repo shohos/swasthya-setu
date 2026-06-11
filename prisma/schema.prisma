@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./swasthya.db"
+}
+
+model Patient {
+  id          String   @id @default(cuid())
+  name        String
+  nameBn      String
+  age         Int
+  sex         String
+  phone       String
+  village     String
+  upazila     String
+  district    String
+  householdId String?
+  createdAt   DateTime @default(now())
+  cases       Case[]
+}
+
+model Case {
+  id                String   @id @default(cuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id])
+  channel           String
+  chiefComplaint    String
+  symptoms          String
+  duration          String
+  vitals            String?
+  triageLevel       String
+  aiSummaryEn       String
+  aiAdviceBn        String
+  dangerSigns       String
+  rawTranscript     String?
+  status            String   @default("PENDING")
+  doctorNotes       String?
+  prescription      String?
+  referralGenerated Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Doctor {
+  id          String  @id @default(cuid())
+  name        String
+  nameBn      String
+  specialty   String
+  specialtyBn String
+  facility    String
+  facilityBn  String
+  upazila     String
+  district    String
+  lat         Float
+  lng         Float
+  phone       String
+  fee         Int
+  available   Boolean @default(true)
+  rating      Float   @default(4.2)
+  teleconsult Boolean @default(true)
+}
+
+model Medicine {
+  id            String  @id @default(cuid())
+  brandName     String
+  genericName   String
+  genericNameBn String
+  manufacturer  String
+  category      String
+  dosageForm    String
+  strength      String
+  priceBdt      Float
+  genericPrice  Float
+  inStock       Boolean @default(true)
+  dgdaApproved  Boolean @default(true)
+}
+
+model Pharmacy {
+  id       String  @id @default(cuid())
+  name     String
+  nameBn   String
+  address  String
+  upazila  String
+  phone    String
+  lat      Float
+  lng      Float
+  open24h  Boolean @default(false)
+  delivery Boolean @default(true)
+}
