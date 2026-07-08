@@ -2,7 +2,7 @@
 
 // Draws realistic-looking sample images on a canvas at runtime, so the demo
 // works with zero binary assets and the prescription sample is a real raster
-// image that goes through actual Claude Vision.
+// image that goes through the actual Vision OCR + Gemini pipeline.
 
 export function drawEyeSample(kind: "anemia" | "jaundice"): string {
   const canvas = document.createElement("canvas");

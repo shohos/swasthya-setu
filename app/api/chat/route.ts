@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClient, hasApiKey, CLAUDE_MODEL } from "@/lib/claude";
+import { hasGeminiKey, streamGemini, extractGeminiText } from "@/lib/gemini";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/triage-prompts";
 import { FALLBACK_CHAT_REPLY } from "@/lib/mock-responses";
 
@@ -25,28 +25,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "messages must end with a user message" }, { status: 400 });
   }
 
-  if (!hasApiKey()) {
+  if (!hasGeminiKey()) {
     return new Response(FALLBACK_CHAT_REPLY, {
       headers: { "Content-Type": "text/plain; charset=utf-8", "X-Fallback": "true" },
     });
   }
 
   try {
-    const client = getClient();
-    const stream = client.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system: CHAT_SYSTEM_PROMPT,
-      messages,
-    });
-
+    const upstream = await streamGemini(CHAT_SYSTEM_PROMPT, messages);
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    // Re-stream Gemini's SSE payloads as plain text chunks for the widget.
     const readable = new ReadableStream({
       async start(controller) {
+        const reader = upstream.body!.getReader();
+        let buffer = "";
         try {
-          for await (const event of stream) {
-            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-              controller.enqueue(encoder.encode(event.delta.text));
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data:")) continue;
+              const json = trimmed.slice(5).trim();
+              if (!json || json === "[DONE]") continue;
+              try {
+                const text = extractGeminiText(JSON.parse(json));
+                if (text) controller.enqueue(encoder.encode(text));
+              } catch {}
             }
           }
         } catch {
@@ -61,7 +71,7 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (err) {
-    console.error("Chat stream failed:", err);
+    console.error("Gemini chat failed:", err);
     return new Response(FALLBACK_CHAT_REPLY, {
       headers: { "Content-Type": "text/plain; charset=utf-8", "X-Fallback": "true" },
     });

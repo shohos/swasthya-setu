@@ -1,7 +1,7 @@
 import { BrainCircuit } from "lucide-react";
 import LoadingDots from "./LoadingDots";
 
-export default function AIThinking({ label = "Claude is analyzing" }: { label?: string }) {
+export default function AIThinking({ label = "AI is analyzing" }: { label?: string }) {
   return (
     <div className="flex items-center gap-3 card-surface px-4 py-3 animate-fade-in">
       <div className="relative">

@@ -34,8 +34,8 @@ const BOT_PROMPTS: Record<string, string> = {
 const INITIAL_STEPS: PipelineStep[] = [
   { label: "📨 SMS received via gateway (shortcode 16789)", status: "pending" },
   { label: "🤖 Conversation state machine: collecting answers", status: "pending" },
-  { label: "🧠 Sending to Claude AI…", status: "pending" },
-  { label: "⚡ Claude analyzing: triage + danger signs…", status: "pending" },
+  { label: "🧠 Sending to Gemini AI…", status: "pending" },
+  { label: "⚡ Gemini analyzing: triage + danger signs…", status: "pending" },
   { label: "✅ Case created · reply SMS queued", status: "pending" },
 ];
 

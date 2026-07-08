@@ -11,8 +11,8 @@ type CallState = "idle" | "dialing" | "active" | "processing" | "done";
 const INITIAL_STEPS: PipelineStep[] = [
   { label: "🎤 Recording patient audio…", status: "pending" },
   { label: "📝 Whisper STT: transcribing Bangla…", status: "pending" },
-  { label: "🧠 Sending to Claude AI…", status: "pending" },
-  { label: "⚡ Claude analyzing: extracting symptoms…", status: "pending" },
+  { label: "🧠 Sending to Gemini AI…", status: "pending" },
+  { label: "⚡ Gemini analyzing: extracting symptoms…", status: "pending" },
   { label: "✅ Triage complete", status: "pending" },
 ];
 

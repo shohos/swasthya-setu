@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.appointment.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.case.deleteMany();
   await prisma.patient.deleteMany();
   await prisma.doctor.deleteMany();
@@ -159,8 +161,9 @@ async function main() {
     { name: "Dr. Mahbub Alam", nameBn: "ডা. মাহবুব আলম", specialty: "Internal Medicine", specialtyBn: "মেডিসিন বিশেষজ্ঞ", facility: "Tangail District Hospital", facilityBn: "টাঙ্গাইল জেলা হাসপাতাল", upazila: "Tangail Sadar", district: "Tangail", lat: 24.2513, lng: 89.9167, phone: "+8801800000007", fee: 350, available: true, rating: 4.4, teleconsult: false },
     { name: "Dr. Shirin Sharmin", nameBn: "ডা. শিরিন শারমিন", specialty: "Gynecologist", specialtyBn: "স্ত্রীরোগ বিশেষজ্ঞ", facility: "Gazipur Sadar Hospital", facilityBn: "গাজীপুর সদর হাসপাতাল", upazila: "Gazipur Sadar", district: "Gazipur", lat: 23.9999, lng: 90.4203, phone: "+8801800000008", fee: 300, available: true, rating: 4.6, teleconsult: true },
   ];
+  const doctors: { id: string }[] = [];
   for (const d of doctorsData) {
-    await prisma.doctor.create({ data: d });
+    doctors.push(await prisma.doctor.create({ data: d }));
   }
 
   // ---------- MEDICINES ----------
@@ -203,7 +206,86 @@ async function main() {
     await prisma.pharmacy.create({ data: ph });
   }
 
-  console.log("Seed complete: 10 patients, 10 cases, 8 doctors, 20 medicines, 6 pharmacies");
+  // ---------- APPOINTMENTS ----------
+  const hour = 60 * min;
+  const day = 24 * hour;
+  const appointmentsData = [
+    // ONGOING — started 10 minutes ago (video)
+    {
+      doctorId: doctors[1].id, patientName: "Nasrin Sultana", patientPhone: "+8801700000009",
+      reason: "Anemia follow-up — dizziness and fatigue", type: "VIDEO",
+      scheduledAt: new Date(now - 10 * min), durationMin: 30, fee: 300,
+      paymentMethod: "bKash", paymentStatus: "PAID", status: "CONFIRMED",
+    },
+    // UPCOMING
+    {
+      doctorId: doctors[0].id, patientName: "Karim Uddin", patientPhone: "+8801700000001",
+      reason: "Gastric pain review after 14-day PPI course", type: "IN_PERSON",
+      scheduledAt: new Date(now + 1 * day + 2 * hour), durationMin: 30, fee: 200,
+      paymentMethod: "Cash on Arrival", paymentStatus: "DUE", status: "CONFIRMED",
+    },
+    {
+      doctorId: doctors[2].id, patientName: "Amena Khatun (child: 3y)", patientPhone: "+8801700000003",
+      reason: "Child diarrhea follow-up — hydration check", type: "VIDEO",
+      scheduledAt: new Date(now + 2 * day + 4 * hour), durationMin: 30, fee: 250,
+      paymentMethod: "Nagad", paymentStatus: "PAID", status: "CONFIRMED",
+    },
+    {
+      doctorId: doctors[1].id, patientName: "Fatema Begum", patientPhone: "+8801700000005",
+      reason: "Antenatal check — 8 months, BP monitoring", type: "IN_PERSON",
+      scheduledAt: new Date(now + 4 * day), durationMin: 30, fee: 300,
+      paymentMethod: "bKash", paymentStatus: "PAID", status: "CONFIRMED",
+    },
+    // PAST — completed with notes + prescriptions
+    {
+      doctorId: doctors[0].id, patientName: "Rahim Mia", patientPhone: "+8801700000006",
+      reason: "High fever, body ache — day 3", type: "VIDEO",
+      scheduledAt: new Date(now - 2 * day), durationMin: 30, fee: 200,
+      paymentMethod: "bKash", paymentStatus: "PAID", status: "COMPLETED",
+      notes: "Suspected dengue. CBC + NS1 advised. Hydration counselling given. Review in 48h or earlier if bleeding/lethargy.",
+      prescription: JSON.stringify([
+        { medicine: "Napa 500mg (Paracetamol)", dosage: "1 tablet", frequency: "1+1+1", duration: "5 days" },
+        { medicine: "Orsaline-N (ORS)", dosage: "1 sachet", frequency: "after each loose stool", duration: "as needed" },
+      ]),
+    },
+    {
+      doctorId: doctors[3].id, patientName: "Kulsum Akter", patientPhone: "+8801700000007",
+      reason: "Diabetes — poor glycaemic control", type: "IN_PERSON",
+      scheduledAt: new Date(now - 5 * day), durationMin: 30, fee: 400,
+      paymentMethod: "Cash on Arrival", paymentStatus: "PAID", status: "COMPLETED",
+      notes: "RBS 16.8 mmol/L. Metformin dose increased. HbA1c ordered. Diet plan discussed. Review in 4 weeks.",
+      prescription: JSON.stringify([
+        { medicine: "Comet 500mg (Metformin)", dosage: "1 tablet", frequency: "1+0+1", duration: "30 days" },
+      ]),
+    },
+    // PAST — cancelled
+    {
+      doctorId: doctors[4].id, patientName: "Babul Mia", patientPhone: "+8801700000010",
+      reason: "Chronic cough consultation", type: "VIDEO",
+      scheduledAt: new Date(now - 3 * day), durationMin: 30, fee: 150,
+      paymentMethod: "bKash", paymentStatus: "REFUNDED", status: "CANCELLED",
+      notes: "Cancelled by patient — rescheduled to in-person TB screening at upazila health complex.",
+    },
+  ];
+  for (const a of appointmentsData) {
+    await prisma.appointment.create({ data: a });
+  }
+
+  // ---------- SAMPLE ORDER ----------
+  await prisma.order.create({
+    data: {
+      items: JSON.stringify([
+        { name: "Napa 500mg", strength: "500mg", qty: 10, price: 0.8 },
+        { name: "Orsaline-N", strength: "1 sachet", qty: 5, price: 8 },
+      ]),
+      subtotal: 48, deliveryFee: 60, total: 108,
+      customerName: "Rahim Mia", phone: "+8801700000006",
+      address: "Dapunia Bazar, Mymensingh Sadar", paymentMethod: "bKash",
+      status: "DELIVERED", createdAt: new Date(now - 2 * day),
+    },
+  });
+
+  console.log("Seed complete: 10 patients, 10 cases, 8 doctors, 20 medicines, 6 pharmacies, 7 appointments, 1 order");
 }
 
 main()

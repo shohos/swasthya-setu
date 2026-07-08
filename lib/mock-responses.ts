@@ -1,4 +1,4 @@
-// Pre-computed fallback responses used when the Claude API is unavailable
+// Pre-computed fallback responses used when the AI APIs are unavailable
 // (missing key, quota exceeded, network failure) so the demo never breaks.
 
 export interface TriageResult {

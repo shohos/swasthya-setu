@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { askClaudeJSON, hasApiKey } from "@/lib/claude";
+import { askGeminiJSON, hasGeminiKey } from "@/lib/gemini";
+import { ocrImage, hasRoboflowKey } from "@/lib/vision";
 import { PRESCRIPTION_SYSTEM_PROMPT } from "@/lib/triage-prompts";
 import { FALLBACK_PRESCRIPTION } from "@/lib/mock-responses";
 import prisma from "@/lib/db";
@@ -29,15 +30,16 @@ interface PrescriptionResult {
   safetyFlags: string[];
   expiryWarning: boolean;
   readabilityScore: number;
+  ocrText?: string;
   _fallback?: boolean;
 }
-
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
 
 export async function POST(req: NextRequest) {
   let result: PrescriptionResult;
 
-  if (!hasApiKey()) {
+  // Two-stage pipeline: Roboflow DocTR OCR extracts the raw text,
+  // then Gemini structures it into the medicine JSON.
+  if (!hasRoboflowKey() || !hasGeminiKey()) {
     result = FALLBACK_PRESCRIPTION as PrescriptionResult;
   } else {
     try {
@@ -46,27 +48,24 @@ export async function POST(req: NextRequest) {
       if (!(file instanceof Blob)) {
         return NextResponse.json({ error: "image file is required" }, { status: 400 });
       }
-      const mediaType = (ALLOWED_TYPES as readonly string[]).includes(file.type)
-        ? (file.type as (typeof ALLOWED_TYPES)[number])
-        : "image/jpeg";
+      if (!file.type.startsWith("image/")) {
+        return NextResponse.json({ error: "file must be an image" }, { status: 400 });
+      }
       const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
 
-      result = await askClaudeJSON<PrescriptionResult>(
+      // Stage 1 — OCR (Roboflow hosted DocTR model)
+      const ocrText = await ocrImage(base64);
+      if (!ocrText.trim()) throw new Error("OCR returned no text");
+
+      // Stage 2 — structuring (Gemini, JSON mode)
+      result = await askGeminiJSON<PrescriptionResult>(
         PRESCRIPTION_SYSTEM_PROMPT,
-        [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: base64 },
-          },
-          {
-            type: "text",
-            text: "Extract all medicine information from this prescription. Output the JSON structure exactly as specified.",
-          },
-        ],
+        `Below is the raw OCR text extracted from a photographed prescription (mixed Bengali/English, may contain OCR noise). Interpret it and output the JSON structure exactly as specified.\n\n--- OCR TEXT START ---\n${ocrText}\n--- OCR TEXT END ---`,
         4096
       );
+      result.ocrText = ocrText;
     } catch (err) {
-      console.error("Prescription Claude call failed, using fallback:", err);
+      console.error("Prescription Roboflow+Gemini pipeline failed, using fallback:", err);
       result = FALLBACK_PRESCRIPTION as PrescriptionResult;
     }
   }

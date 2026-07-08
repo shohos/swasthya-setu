@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import ChatWidget from "@/components/shared/ChatWidget";
 import Toaster from "@/components/shared/Toaster";
+import CartDrawer from "@/components/medicine/CartDrawer";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({
         <Navbar />
         <main className="pt-16">{children}</main>
         <ChatWidget />
+        <CartDrawer />
         <Toaster />
       </body>
     </html>

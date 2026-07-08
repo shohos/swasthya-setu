@@ -7,8 +7,8 @@ import AIThinking from "@/components/shared/AIThinking";
 
 const INITIAL_STEPS: PipelineStep[] = [
   { label: "📋 Structured form validated", status: "pending" },
-  { label: "🧠 Sending to Claude AI…", status: "pending" },
-  { label: "⚡ Claude analyzing: triage + danger signs…", status: "pending" },
+  { label: "🧠 Sending to Gemini AI…", status: "pending" },
+  { label: "⚡ Gemini analyzing: triage + danger signs…", status: "pending" },
   { label: "✅ Case created · SMS confirmation queued", status: "pending" },
 ];
 

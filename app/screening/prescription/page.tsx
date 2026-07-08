@@ -79,10 +79,13 @@ export default function PrescriptionScannerPage() {
           <FileText className="w-6 h-6 text-blue-400" />
         </span>
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Prescription Scanner (Claude Vision)</h1>
+          <h1 className="text-2xl font-bold text-slate-100">
+            Prescription Scanner (Roboflow OCR + Gemini)
+          </h1>
           <p className="text-sm text-slate-400">
-            Upload any handwritten or printed prescription — Claude reads mixed Bangla/English and
-            explains every medicine in plain Bangla. This is a live API call.
+            Upload any handwritten or printed prescription — Roboflow&apos;s hosted DocTR OCR
+            extracts the text, then Gemini explains every medicine in plain Bangla. Live two-stage
+            API pipeline.
           </p>
         </div>
       </div>
@@ -134,7 +137,7 @@ export default function PrescriptionScannerPage() {
 
         {/* RIGHT: results */}
         <div className="space-y-3">
-          {busy && <AIThinking label="Claude is reading the prescription" />}
+          {busy && <AIThinking label="Reading the prescription (Roboflow OCR → Gemini)" />}
 
           {!busy && !result && (
             <div className="panel p-8 text-center text-slate-500 text-sm">

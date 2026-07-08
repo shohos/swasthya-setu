@@ -79,6 +79,39 @@ export interface PharmacyDTO {
   delivery: boolean;
 }
 
+export interface AppointmentDTO {
+  id: string;
+  doctorId: string;
+  doctor: DoctorDTO;
+  patientName: string;
+  patientPhone: string;
+  reason: string;
+  type: "VIDEO" | "IN_PERSON" | string;
+  scheduledAt: string;
+  durationMin: number;
+  fee: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  status: "CONFIRMED" | "COMPLETED" | "CANCELLED" | string;
+  notes: string | null;
+  prescription: string | null; // JSON array
+  createdAt: string;
+}
+
+export interface OrderDTO {
+  id: string;
+  items: string; // JSON array
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  customerName: string;
+  phone: string;
+  address: string;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+}
+
 export function parseJsonArray(s: string | null | undefined): string[] {
   if (!s) return [];
   try {

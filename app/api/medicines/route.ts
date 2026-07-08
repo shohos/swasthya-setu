@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { askClaudeJSON, hasApiKey } from "@/lib/claude";
+import { askGeminiJSON, hasGeminiKey } from "@/lib/gemini";
 import { GENERIC_SUBSTITUTION_PROMPT } from "@/lib/triage-prompts";
 import { FALLBACK_GENERIC_SUB } from "@/lib/mock-responses";
 
@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
   }
 
   let aiResult: GenericSub;
-  if (hasApiKey()) {
+  if (hasGeminiKey()) {
     try {
-      aiResult = await askClaudeJSON<GenericSub>(
+      aiResult = await askGeminiJSON<GenericSub>(
         GENERIC_SUBSTITUTION_PROMPT,
         `Brand name: ${brandName}${
           dbMatch
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         1024
       );
     } catch (err) {
-      console.error("Generic substitution Claude call failed:", err);
+      console.error("Generic substitution Gemini call failed:", err);
       aiResult = { ...FALLBACK_GENERIC_SUB, brandName };
     }
   } else {

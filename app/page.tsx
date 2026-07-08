@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Footer from "@/components/layout/Footer";
 import { RESEARCH_TICKER } from "@/lib/mock-data";
+import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import {
   PhoneCall,
   MessageSquareText,
@@ -79,7 +81,7 @@ const CHANNELS = [
 const STEPS = [
   { icon: PhoneCall, title: "Patient Calls/Texts", detail: "Toll-free IVR or SMS shortcode — works on a ৳1,500 feature phone." },
   { icon: Mic, title: "AI Collects Symptoms", detail: "Whisper speech-to-text in Bangla; structured question flow." },
-  { icon: BrainCircuit, title: "Claude Triages", detail: "RED / YELLOW / GREEN risk with danger-sign detection." },
+  { icon: BrainCircuit, title: "AI Triages", detail: "RED / YELLOW / GREEN risk with danger-sign detection." },
   { icon: Stethoscope, title: "Doctor Reviews", detail: "Risk-sorted queue; e-prescription in one click." },
   { icon: Send, title: "Patient Gets Care", detail: "Bangla SMS with advice, prescription, and referral." },
 ];
@@ -89,7 +91,7 @@ const MODULES = [
     href: "/screening/anemia",
     icon: Eye,
     title: "CV Screening",
-    desc: "Anemia & jaundice detected from camera — on-device, offline.",
+    desc: "Anemia & jaundice detected from eye photos — on-device color analysis + Roboflow CLIP.",
     color: "border-teal-800 hover:border-teal-500",
     iconC: "text-teal-400",
   },
@@ -97,7 +99,7 @@ const MODULES = [
     href: "/screening/prescription",
     icon: FileText,
     title: "Prescription Reader",
-    desc: "Handwritten Bangla prescriptions decoded by Claude Vision.",
+    desc: "Handwritten Bangla prescriptions decoded by Vision OCR + Gemini.",
     color: "border-blue-800 hover:border-blue-500",
     iconC: "text-blue-400",
   },
@@ -120,6 +122,8 @@ const MODULES = [
 ];
 
 export default function LandingPage() {
+  const { t, lang } = useT();
+  const bn = lang === "bn";
   return (
     <div>
       {/* HERO */}
@@ -135,9 +139,8 @@ export default function LandingPage() {
             SWASTHYA SETU
           </h1>
           <p className="font-bangla text-2xl sm:text-3xl text-slate-300 mt-2">স্বাস্থ্য সেতু</p>
-          <p className="text-lg sm:text-xl text-slate-400 mt-4 max-w-2xl mx-auto">
-            Bridging <span className="text-teal-400 font-semibold">100 Million</span> Rural
-            Bangladeshis to Healthcare
+          <p className={cn("text-lg sm:text-xl text-slate-400 mt-4 max-w-2xl mx-auto", bn && "font-bangla")}>
+            {t("hero.subtitle")}
           </p>
 
           <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mt-10">
@@ -147,11 +150,11 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-10">
-            <Link href="/demo" className="btn-primary text-base px-6 py-3 inline-flex items-center justify-center gap-2">
-              Try the Demo <ArrowRight className="w-4 h-4" />
+            <Link href="/demo" className={cn("btn-primary text-base px-6 py-3 inline-flex items-center justify-center gap-2", bn && "font-bangla")}>
+              {t("hero.tryDemo")} <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/dashboard" className="btn-secondary text-base px-6 py-3 inline-flex items-center justify-center gap-2">
-              View Doctor Dashboard <ArrowRight className="w-4 h-4" />
+            <Link href="/dashboard" className={cn("btn-secondary text-base px-6 py-3 inline-flex items-center justify-center gap-2", bn && "font-bangla")}>
+              {t("hero.viewDashboard")} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -172,8 +175,8 @@ export default function LandingPage() {
 
       {/* THREE CHANNELS */}
       <section className="max-w-7xl mx-auto px-4 py-12">
-        <h2 className="text-center text-sm uppercase tracking-widest text-slate-500 font-bold mb-6">
-          Three input channels · One AI pipeline
+        <h2 className={cn("text-center text-sm uppercase tracking-widest text-slate-500 font-bold mb-6", bn && "font-bangla tracking-normal")}>
+          {t("landing.channels")}
         </h2>
         <div className="grid sm:grid-cols-3 gap-4">
           {CHANNELS.map((c) => (
@@ -199,7 +202,9 @@ export default function LandingPage() {
 
       {/* HOW IT WORKS */}
       <section className="max-w-7xl mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold text-slate-100 text-center mb-8">How it works</h2>
+        <h2 className={cn("text-2xl font-bold text-slate-100 text-center mb-8", bn && "font-bangla")}>
+          {t("landing.howItWorks")}
+        </h2>
         <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto pb-3 snap-x">
           {STEPS.map((s, i) => (
             <div
@@ -226,7 +231,9 @@ export default function LandingPage() {
 
       {/* MODULES */}
       <section className="max-w-7xl mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold text-slate-100 text-center mb-2">4 Core Modules</h2>
+        <h2 className={cn("text-2xl font-bold text-slate-100 text-center mb-2", bn && "font-bangla")}>
+          {t("landing.modules")}
+        </h2>
         <p className="text-center text-sm text-slate-400 mb-8">
           Each module works offline-first and feeds the same patient record.
         </p>

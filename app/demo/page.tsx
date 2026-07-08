@@ -20,10 +20,10 @@ import {
 } from "lucide-react";
 
 const DEMOS = [
-  { href: "/intake/sms", title: "SMS Intake Demo", time: "45 sec", icon: MessageSquareText, desc: "Feature-phone chatbot → Claude triage → case created", color: "border-blue-800 hover:border-blue-500 text-blue-400" },
+  { href: "/intake/sms", title: "SMS Intake Demo", time: "45 sec", icon: MessageSquareText, desc: "Feature-phone chatbot → Gemini triage → case created", color: "border-blue-800 hover:border-blue-500 text-blue-400" },
   { href: "/intake/voice", title: "Voice Call Demo", time: "45 sec", icon: PhoneCall, desc: "IVR call simulation with Whisper STT pipeline", color: "border-teal-800 hover:border-teal-500 text-teal-400" },
   { href: "/screening/anemia", title: "Anemia Screening", time: "30 sec", icon: Eye, desc: "Conjunctiva photo → hemoglobin estimate + heatmap", color: "border-teal-800 hover:border-teal-500 text-teal-400" },
-  { href: "/screening/prescription", title: "Prescription Scanner", time: "30 sec", icon: FileText, desc: "Real Claude Vision call on a handwritten prescription", color: "border-blue-800 hover:border-blue-500 text-blue-400" },
+  { href: "/screening/prescription", title: "Prescription Scanner", time: "30 sec", icon: FileText, desc: "Live Vision OCR + Gemini pipeline on a handwritten prescription", color: "border-blue-800 hover:border-blue-500 text-blue-400" },
   { href: "/dashboard", title: "Doctor Dashboard", time: "45 sec", icon: LayoutDashboard, desc: "Risk-sorted queue, e-prescription, DHIS2 export", color: "border-purple-800 hover:border-purple-500 text-purple-400" },
 ];
 
@@ -41,9 +41,9 @@ const JOURNEY_STEPS = [
     icon: Smartphone,
   },
   {
-    title: "3 · Claude triages: RED",
+    title: "3 · Gemini AI triages: RED",
     bn: "গর্ভাবস্থার বিপদ চিহ্ন!",
-    desc: "Claude recognizes the pre-eclampsia danger pattern — headache + visual changes at 32 weeks — and assigns RED with a clinical rationale.",
+    desc: "Gemini recognizes the pre-eclampsia danger pattern — headache + visual changes at 32 weeks — and assigns RED with a clinical rationale.",
     icon: BrainCircuit,
   },
   {
@@ -145,7 +145,7 @@ export default function DemoHubPage() {
           <FlowArrows count={3} />
 
           <ArchColumn title="AI Pipeline">
-            <ArchBox href="/intake/sms" icon={BrainCircuit} label="Claude Triage" sub="RED / YELLOW / GREEN" color="teal" tall />
+            <ArchBox href="/intake/sms" icon={BrainCircuit} label="Gemini Triage" sub="RED / YELLOW / GREEN" color="teal" tall />
             <ArchBox href="/screening/anemia" icon={Eye} label="CV Screening" sub="anemia · jaundice" color="teal" />
           </ArchColumn>
 
@@ -153,7 +153,7 @@ export default function DemoHubPage() {
 
           <ArchColumn title="Care Layer">
             <ArchBox href="/dashboard" icon={LayoutDashboard} label="Doctor Portal" sub="risk-sorted queue" color="purple" tall />
-            <ArchBox href="/screening/prescription" icon={FileText} label="Rx Reader" sub="Claude Vision" color="blue" />
+            <ArchBox href="/screening/prescription" icon={FileText} label="Rx Reader" sub="Vision OCR + Gemini" color="blue" />
             <ArchBox href="/medicine" icon={Pill} label="Medicine Finder" sub="generics + delivery" color="amber" />
             <ArchBox href="/doctors" icon={Stethoscope} label="Doctor Booking" sub="video / in-person" color="purple" />
           </ArchColumn>

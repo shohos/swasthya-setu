@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { DoctorDTO } from "@/lib/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { AppointmentDTO, DoctorDTO } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
-import { haversineKm } from "@/lib/utils";
+import { haversineKm, cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import BanglaText from "@/components/shared/BanglaText";
+import VideoCallModal from "@/components/doctors/VideoCallModal";
 import {
   Stethoscope,
   Star,
   Video,
   CalendarPlus,
   X,
-  PhoneOff,
   MapPin,
   CheckCircle2,
+  CalendarDays,
 } from "lucide-react";
 
 const USER_LOC = { lat: 24.7471, lng: 90.4203 };
@@ -21,17 +24,14 @@ const SPECIALTIES = ["All", "General Physician", "Gynecologist", "Pediatrician",
 const DISTRICTS = ["All", "Mymensingh", "Netrokona", "Kishoreganj", "Sherpur", "Tangail", "Gazipur"];
 const PATIENTS = ["Karim Uddin", "Rohima Begum", "Amena Khatun", "Abdul Rahim", "Fatema Begum", "New Patient"];
 const SLOTS = ["09:00", "09:30", "10:00", "10:30", "15:00", "15:30", "16:00", "19:00", "19:30", "20:00"];
-
-const UPCOMING = [
-  { doctor: "Dr. Nasrin Akter", when: "Tomorrow, 10:30 AM", type: "Video", status: "Confirmed" },
-  { doctor: "Dr. Rahman Hossain", when: "Fri 14 Jun, 4:00 PM", type: "In-person", status: "Confirmed" },
-  { doctor: "Dr. Kamal Ahmed", when: "Mon 17 Jun, 9:00 AM", type: "Video", status: "Pending" },
-];
+const REASONS = ["Follow-up", "Fever / infection", "Chronic disease", "Maternal care", "Other"];
 
 const AVATAR_COLORS = ["bg-teal-700", "bg-blue-700", "bg-purple-700", "bg-amber-700", "bg-rose-700", "bg-emerald-700"];
 
 export default function DoctorsPage() {
+  const { t, lang } = useT();
   const [doctors, setDoctors] = useState<DoctorDTO[]>([]);
+  const [upcoming, setUpcoming] = useState<AppointmentDTO[]>([]);
   const [specialty, setSpecialty] = useState("All");
   const [district, setDistrict] = useState("All");
   const [tele, setTele] = useState(false);
@@ -51,6 +51,26 @@ export default function DoctorsPage() {
       .then((d) => setDoctors(d.doctors ?? []))
       .catch(() => {});
   }, [specialty, district, tele, availToday]);
+
+  const loadUpcoming = useCallback(() => {
+    fetch("/api/appointments")
+      .then((r) => r.json())
+      .then((d) => {
+        const list: AppointmentDTO[] = d.appointments ?? [];
+        const now = Date.now();
+        setUpcoming(
+          list
+            .filter((a) => a.status === "CONFIRMED" && +new Date(a.scheduledAt) > now)
+            .sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
+            .slice(0, 4)
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadUpcoming();
+  }, [loadUpcoming]);
 
   const sorted = useMemo(() => {
     const withDist = doctors.map((d) => ({
@@ -175,46 +195,75 @@ export default function DoctorsPage() {
           ))}
         </div>
 
-        {/* upcoming sidebar */}
+        {/* upcoming sidebar — live from API */}
         <div className="panel p-4 h-fit">
-          <h3 className="font-bold text-slate-100 text-sm uppercase tracking-widest mb-3">
-            Upcoming Appointments
+          <h3 className={cn("font-bold text-slate-100 text-sm uppercase tracking-widest mb-3", lang === "bn" && "font-bangla")}>
+            {t("appt.upcoming")}
           </h3>
           <div className="space-y-2.5">
-            {UPCOMING.map((a) => (
-              <div key={a.doctor + a.when} className="card-surface p-3 text-sm">
-                <p className="font-semibold text-slate-100">{a.doctor}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{a.when}</p>
+            {upcoming.length === 0 && (
+              <p className={cn("text-xs text-slate-500", lang === "bn" && "font-bangla")}>{t("appt.none")}</p>
+            )}
+            {upcoming.map((a) => (
+              <div key={a.id} className="card-surface p-3 text-sm">
+                <p className="font-semibold text-slate-100">{a.doctor?.name}</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {new Date(a.scheduledAt).toLocaleString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/30 border border-blue-700 text-blue-300">
-                    {a.type}
+                    {a.type === "VIDEO" ? "Video" : "In-person"}
                   </span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                      a.status === "Confirmed"
-                        ? "bg-green-900/30 border-green-700 text-green-300"
-                        : "bg-amber-900/30 border-amber-700 text-amber-300"
-                    }`}
-                  >
-                    {a.status}
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border bg-green-900/30 border-green-700 text-green-300">
+                    {a.status === "CONFIRMED" ? "Confirmed" : a.status}
                   </span>
                 </div>
               </div>
             ))}
           </div>
+          <Link
+            href="/appointments"
+            className={cn(
+              "mt-3 text-xs text-purple-300 hover:text-purple-200 flex items-center gap-1.5",
+              lang === "bn" && "font-bangla"
+            )}
+          >
+            <CalendarDays className="w-3.5 h-3.5" /> {t("common.viewAll")} →
+          </Link>
         </div>
       </div>
 
-      {booking && <BookingModal doctor={booking} onClose={() => setBooking(null)} />}
-      {videoCall && <VideoCallModal doctor={videoCall} onClose={() => setVideoCall(null)} />}
+      {booking && (
+        <BookingModal doctor={booking} onClose={() => setBooking(null)} onBooked={loadUpcoming} />
+      )}
+      {videoCall && <VideoCallModal doctorName={videoCall.name} onClose={() => setVideoCall(null)} />}
     </div>
   );
 }
 
-function BookingModal({ doctor, onClose }: { doctor: DoctorDTO; onClose: () => void }) {
+function BookingModal({
+  doctor,
+  onClose,
+  onBooked,
+}: {
+  doctor: DoctorDTO;
+  onClose: () => void;
+  onBooked: () => void;
+}) {
   const pushToast = useAppStore((s) => s.pushToast);
   const [slot, setSlot] = useState<string | null>(null);
+  const [patient, setPatient] = useState(PATIENTS[0]);
+  const [reason, setReason] = useState(REASONS[0]);
+  const [type, setType] = useState<"VIDEO" | "IN_PERSON">(doctor.teleconsult ? "VIDEO" : "IN_PERSON");
+  const [payment, setPayment] = useState("bKash");
   const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i + 1);
@@ -222,234 +271,170 @@ function BookingModal({ doctor, onClose }: { doctor: DoctorDTO; onClose: () => v
   });
   const [day, setDay] = useState(days[0]);
 
-  function confirm() {
+  async function confirm() {
+    if (!slot || saving) return;
+    setSaving(true);
+    const scheduled = new Date(day);
+    const [h, m] = slot.split(":").map(Number);
+    scheduled.setHours(h, m, 0, 0);
+
+    try {
+      await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorId: doctor.id,
+          patientName: patient,
+          reason,
+          type,
+          scheduledAt: scheduled.toISOString(),
+          paymentMethod: payment,
+        }),
+      });
+    } catch {}
+    setSaving(false);
     setConfirmed(true);
+    onBooked();
     pushToast({
       title: "Appointment confirmed!",
-      message: `${doctor.name} — ${day.toDateString().slice(0, 10)} ${slot}. Reminder SMS will be sent.`,
+      message: `${doctor.name} — ${scheduled.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${slot}. Reminder SMS will be sent.`,
       variant: "success",
     });
     setTimeout(onClose, 1800);
   }
 
   return (
-    <Modal onClose={onClose} title={`Book Appointment — ${doctor.name}`}>
-      {confirmed ? (
-        <div className="text-center py-8 animate-fade-in">
-          <CheckCircle2 className="w-14 h-14 text-teal-400 mx-auto" />
-          <p className="font-bold text-slate-100 mt-3">Appointment confirmed!</p>
-          <p className="text-sm text-slate-400 mt-1">Reminder SMS will be sent in Bangla.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs text-slate-400 mb-1.5">Date (next 7 days)</p>
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {days.map((d) => (
-                <button
-                  key={d.toISOString()}
-                  onClick={() => setDay(d)}
-                  className={`shrink-0 px-3 py-2 rounded-lg text-xs border ${
-                    day.toDateString() === d.toDateString()
-                      ? "bg-teal-600/20 border-teal-600 text-teal-300"
-                      : "bg-card border-edge text-slate-300"
-                  }`}
-                >
-                  {d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 mb-1.5">Time slot (30 min)</p>
-            <div className="grid grid-cols-5 gap-1.5">
-              {SLOTS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSlot(s)}
-                  className={`px-1 py-1.5 rounded-lg text-xs border ${
-                    slot === s
-                      ? "bg-teal-600/20 border-teal-600 text-teal-300"
-                      : "bg-card border-edge text-slate-300"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Patient</p>
-              <select className="input-dark text-sm">
-                {PATIENTS.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Reason for visit</p>
-              <select className="input-dark text-sm">
-                <option>Follow-up</option>
-                <option>Fever / infection</option>
-                <option>Chronic disease</option>
-                <option>Maternal care</option>
-                <option>Other</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 mb-1.5">Payment method</p>
-            <div className="flex gap-2">
-              {["bKash", "Nagad", "Cash on Arrival"].map((p) => (
-                <label key={p} className="flex items-center gap-1.5 text-sm text-slate-300 cursor-pointer">
-                  <input type="radio" name="pay" defaultChecked={p === "bKash"} className="accent-teal-500" />
-                  {p}
-                </label>
-              ))}
-            </div>
-          </div>
-          <button onClick={confirm} disabled={!slot} className="btn-primary w-full">
-            Confirm — ৳{doctor.fee}
-          </button>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-function VideoCallModal({ doctor, onClose }: { doctor: DoctorDTO; onClose: () => void }) {
-  const pushToast = useAppStore((s) => s.pushToast);
-  const [seconds, setSeconds] = useState(0);
-  const [connected, setConnected] = useState(false);
-  const [ended, setEnded] = useState(false);
-
-  useEffect(() => {
-    const c = setTimeout(() => setConnected(true), 2500);
-    return () => clearTimeout(c);
-  }, []);
-  useEffect(() => {
-    if (!connected || ended) return;
-    const t = setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [connected, ended]);
-
-  return (
-    <Modal onClose={onClose} title={`Video Consult — ${doctor.name}`} wide>
-      {!ended ? (
-        <div className="grid md:grid-cols-3 gap-3">
-          <div className="md:col-span-2 relative bg-ink rounded-xl border border-edge aspect-video flex items-center justify-center overflow-hidden">
-            {!connected ? (
-              <div className="text-center">
-                <p className="text-slate-300">Connecting to {doctor.name}…</p>
-                <div className="mt-3 flex justify-center gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      className="w-2 h-2 rounded-full bg-teal-400 animate-bounce"
-                      style={{ animationDelay: `${i * 0.15}s` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <>
-                <span className="w-24 h-24 rounded-full bg-purple-700 flex items-center justify-center text-4xl font-bold text-white">
-                  {doctor.name.replace("Dr. ", "").charAt(0)}
-                </span>
-                <span className="absolute top-3 left-3 text-xs bg-ink/80 px-2 py-1 rounded text-teal-300">
-                  ● LIVE · {String(Math.floor(seconds / 60)).padStart(2, "0")}:
-                  {String(seconds % 60).padStart(2, "0")}
-                </span>
-                <span className="absolute bottom-3 right-3 w-20 h-14 bg-card border border-edge rounded-lg flex items-center justify-center text-[10px] text-slate-500">
-                  You
-                </span>
-              </>
-            )}
-          </div>
-
-          <div className="card-surface p-3 text-xs space-y-2.5 overflow-y-auto max-h-[300px]">
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-              Patient Info
-            </p>
-            <p className="text-slate-200 font-semibold text-sm">Nasrin Sultana, 33F</p>
-            <div>
-              <p className="text-slate-500">CV Screening</p>
-              <p className="text-amber-300">Hb 8.2 g/dL (est.) — Moderate anemia, 81% conf.</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Symptom history</p>
-              <p className="text-slate-300">Dizziness, fatigue, pale skin — 3 weeks</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Triage</p>
-              <p className="text-amber-300 font-semibold">YELLOW — clinic within 48h</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Current medication</p>
-              <p className="text-slate-300">Feofol (Iron + Folic) 1×daily</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setEnded(true)}
-            className="md:col-span-3 bg-red-600 hover:bg-red-500 text-white rounded-lg py-2.5 font-semibold flex items-center justify-center gap-2"
-          >
-            <PhoneOff className="w-4 h-4" /> End Call
-          </button>
-        </div>
-      ) : (
-        <div className="text-center py-6">
-          <p className="font-bold text-slate-100">Call ended ({seconds}s)</p>
-          <p className="text-sm text-slate-400 mt-1">Issue e-prescription for this patient?</p>
-          <div className="flex gap-2 justify-center mt-4">
-            <button
-              onClick={() => {
-                pushToast({
-                  title: "Prescription SMS sent",
-                  message: "Feofol continued + CBC test referral sent to patient in Bangla",
-                  variant: "success",
-                });
-                onClose();
-              }}
-              className="btn-primary text-sm"
-            >
-              Issue e-Prescription
-            </button>
-            <button onClick={onClose} className="btn-secondary text-sm">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-function Modal({
-  title,
-  children,
-  onClose,
-  wide = false,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-  wide?: boolean;
-}) {
-  return (
     <div className="fixed inset-0 z-[95] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className={`panel w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[88vh] overflow-y-auto p-5 animate-slide-up`}
+        className="panel w-full max-w-md max-h-[88vh] overflow-y-auto p-5 animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-slate-100">{title}</h3>
+          <h3 className="font-bold text-slate-100">Book Appointment — {doctor.name}</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
-        {children}
+
+        {confirmed ? (
+          <div className="text-center py-8 animate-fade-in">
+            <CheckCircle2 className="w-14 h-14 text-teal-400 mx-auto" />
+            <p className="font-bold text-slate-100 mt-3">Appointment confirmed!</p>
+            <p className="text-sm text-slate-400 mt-1">
+              It now appears in{" "}
+              <Link href="/appointments" className="text-purple-300 underline">
+                My Appointments
+              </Link>
+              .
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-slate-400 mb-1.5">Consultation type</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setType("VIDEO")}
+                  disabled={!doctor.teleconsult}
+                  className={cn(
+                    "flex-1 px-3 py-2 rounded-lg text-xs border flex items-center justify-center gap-1.5",
+                    type === "VIDEO"
+                      ? "bg-blue-600/20 border-blue-600 text-blue-300"
+                      : "bg-card border-edge text-slate-300 disabled:opacity-40"
+                  )}
+                >
+                  <Video className="w-3.5 h-3.5" /> Video Call
+                </button>
+                <button
+                  onClick={() => setType("IN_PERSON")}
+                  className={cn(
+                    "flex-1 px-3 py-2 rounded-lg text-xs border flex items-center justify-center gap-1.5",
+                    type === "IN_PERSON"
+                      ? "bg-amber-600/20 border-amber-600 text-amber-300"
+                      : "bg-card border-edge text-slate-300"
+                  )}
+                >
+                  <MapPin className="w-3.5 h-3.5" /> In-person
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-400 mb-1.5">Date (next 7 days)</p>
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {days.map((d) => (
+                  <button
+                    key={d.toISOString()}
+                    onClick={() => setDay(d)}
+                    className={`shrink-0 px-3 py-2 rounded-lg text-xs border ${
+                      day.toDateString() === d.toDateString()
+                        ? "bg-teal-600/20 border-teal-600 text-teal-300"
+                        : "bg-card border-edge text-slate-300"
+                    }`}
+                  >
+                    {d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1.5">Time slot (30 min)</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {SLOTS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSlot(s)}
+                    className={`px-1 py-1.5 rounded-lg text-xs border ${
+                      slot === s
+                        ? "bg-teal-600/20 border-teal-600 text-teal-300"
+                        : "bg-card border-edge text-slate-300"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Patient</p>
+                <select value={patient} onChange={(e) => setPatient(e.target.value)} className="input-dark text-sm">
+                  {PATIENTS.map((p) => (
+                    <option key={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Reason for visit</p>
+                <select value={reason} onChange={(e) => setReason(e.target.value)} className="input-dark text-sm">
+                  {REASONS.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1.5">Payment method</p>
+              <div className="flex gap-2">
+                {["bKash", "Nagad", "Cash on Arrival"].map((p) => (
+                  <label key={p} className="flex items-center gap-1.5 text-sm text-slate-300 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="pay"
+                      checked={payment === p}
+                      onChange={() => setPayment(p)}
+                      className="accent-teal-500"
+                    />
+                    {p}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <button onClick={confirm} disabled={!slot || saving} className="btn-primary w-full">
+              {saving ? "Booking…" : `Confirm — ৳${doctor.fee}`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

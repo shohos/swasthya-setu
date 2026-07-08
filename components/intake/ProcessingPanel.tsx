@@ -83,7 +83,7 @@ export default function ProcessingPanel({
 
           <div className="card-surface p-3">
             <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1.5">
-              Structured JSON output (Claude)
+              Structured JSON output (Gemini)
             </p>
             <pre className="text-[10px] font-mono text-emerald-300/90 whitespace-pre-wrap max-h-56 overflow-y-auto">
               {JSON.stringify(result, null, 2)}

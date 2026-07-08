@@ -2,28 +2,41 @@
 
 import { useState } from "react";
 import CameraCapture from "@/components/screening/CameraCapture";
-import AnemiaResult from "@/components/screening/AnemiaResult";
+import ScreeningResultCard from "@/components/screening/ScreeningResultCard";
+import ScreeningTabs from "@/components/screening/ScreeningTabs";
 import AIThinking from "@/components/shared/AIThinking";
 import { drawEyeSample } from "@/components/screening/sample-images";
+import { computeColorIndex } from "@/components/screening/color-index";
+import type { ScreeningResult } from "@/lib/vision";
 import { Eye, CheckCircle2, XCircle } from "lucide-react";
 
 export default function AnemiaScreeningPage() {
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [done, setDone] = useState(false);
+  const [result, setResult] = useState<ScreeningResult | null>(null);
 
-  function analyze(dataUrl: string) {
+  async function analyze(dataUrl: string) {
     setImage(dataUrl);
-    setDone(false);
+    setResult(null);
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
-      setDone(true);
-    }, 2200);
+    try {
+      // On-device color analysis first — runs even fully offline.
+      const colorIndex = await computeColorIndex(dataUrl, "anemia");
+      const res = await fetch("/api/screening", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl, type: "anemia", colorIndex }),
+      });
+      setResult(await res.json());
+    } catch {
+      setResult(null);
+    }
+    setAnalyzing(false);
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <ScreeningTabs />
       <div className="flex items-center gap-3 mb-5">
         <span className="p-2.5 rounded-xl bg-teal-600/15 border border-teal-800">
           <Eye className="w-6 h-6 text-teal-400" />
@@ -31,7 +44,8 @@ export default function AnemiaScreeningPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-100">Anemia Screening (Computer Vision)</h1>
           <p className="text-sm text-slate-400">
-            Hemoglobin estimate from conjunctival pallor — on-device TFLite in production.
+            Hemoglobin estimate from conjunctival pallor — on-device color analysis verified by
+            Roboflow CLIP zero-shot AI.
           </p>
         </div>
       </div>
@@ -82,8 +96,8 @@ export default function AnemiaScreeningPage() {
             onUseSample={() => analyze(drawEyeSample("anemia"))}
           />
           <p className="text-[11px] text-slate-500 mt-3">
-            Demo note: webcam captures return a representative mock result — in the field this
-            would run the TFLite model on-device.
+            The conjunctival redness index is computed on-device; Roboflow CLIP adds a zero-shot
+            pallor check. Without a Roboflow key the on-device index alone is used.
           </p>
         </div>
 
@@ -93,12 +107,12 @@ export default function AnemiaScreeningPage() {
             Result
           </h3>
           {analyzing && <AIThinking label="Analyzing conjunctival pallor" />}
-          {!analyzing && !done && (
+          {!analyzing && !result && (
             <div className="panel p-6 text-center text-slate-500 text-sm">
               Capture or load a sample image to run screening.
             </div>
           )}
-          {done && image && <AnemiaResult image={image} />}
+          {!analyzing && result && image && <ScreeningResultCard image={image} result={result} />}
         </div>
       </div>
     </div>

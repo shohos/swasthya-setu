@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { MessageCircle, Send, X, HeartPulse } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import LoadingDots from "./LoadingDots";
 
 interface Msg {
@@ -18,6 +20,7 @@ const SUGGESTIONS = [
 
 export default function ChatWidget() {
   const { chatOpen, setChatOpen } = useAppStore();
+  const { t, lang } = useT();
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
@@ -77,7 +80,9 @@ export default function ChatWidget() {
           className="fixed bottom-4 right-4 z-[90] btn-primary flex items-center gap-2 shadow-xl shadow-teal-900/40"
         >
           <MessageCircle className="w-5 h-5" />
-          <span className="hidden sm:inline">Chat in Bangla</span>
+          <span className={cn("hidden sm:inline", lang === "bn" && "font-bangla")}>
+            {t("chat.open")}
+          </span>
           <span className="font-bangla sm:hidden">চ্যাট</span>
         </button>
       )}
@@ -87,10 +92,12 @@ export default function ChatWidget() {
           <div className="flex items-center gap-2 px-4 py-3 border-b border-edge">
             <HeartPulse className="w-5 h-5 text-teal-400" />
             <div>
-              <p className="text-sm font-semibold text-slate-100">Health Assistant</p>
+              <p className={cn("text-sm font-semibold text-slate-100", lang === "bn" && "font-bangla")}>
+                {t("chat.title")}
+              </p>
               <p className="text-[10px] text-teal-400 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" /> Powered by
-                Claude
+                Gemini
               </p>
             </div>
             <button

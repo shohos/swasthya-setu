@@ -3,20 +3,24 @@
 import { useEffect, useState } from "react";
 import { MedicineDTO } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
-import { Search, Truck, MapPin, BadgePercent, BellRing } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { Search, MapPin, BadgePercent, ShoppingCart } from "lucide-react";
 import LoadingDots from "@/components/shared/LoadingDots";
 
 export default function MedicineSearch({ onFindNearby }: { onFindNearby: () => void }) {
   const pushToast = useAppStore((s) => s.pushToast);
+  const addToCart = useAppStore((s) => s.addToCart);
+  const setCartOpen = useAppStore((s) => s.setCartOpen);
+  const { t, lang } = useT();
   const [q, setQ] = useState("");
   const [genericOnly, setGenericOnly] = useState(false);
   const [meds, setMeds] = useState<MedicineDTO[]>([]);
   const [busy, setBusy] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [reminderFor, setReminderFor] = useState<MedicineDTO | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setBusy(true);
       try {
         const res = await fetch(`/api/medicines?q=${encodeURIComponent(q)}`);
@@ -27,20 +31,24 @@ export default function MedicineSearch({ onFindNearby }: { onFindNearby: () => v
       }
       setBusy(false);
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [q]);
 
-  const shown = genericOnly
-    ? meds.filter((m) => m.genericPrice < m.priceBdt)
-    : meds;
+  const shown = genericOnly ? meds.filter((m) => m.genericPrice < m.priceBdt) : meds;
 
-  function order(m: MedicineDTO) {
+  function add(m: MedicineDTO) {
+    addToCart({
+      id: m.id,
+      name: m.brandName,
+      nameBn: m.genericNameBn,
+      strength: m.strength,
+      dosageForm: m.dosageForm,
+      price: m.priceBdt,
+    });
     pushToast({
-      title: "Order placed for delivery",
-      message: `${m.brandName} — delivery within 2 hours from nearest pharmacy`,
+      title: `${m.brandName} ${lang === "bn" ? "কার্টে যোগ হয়েছে" : "added to cart"}`,
       variant: "success",
     });
-    setReminderFor(m);
   }
 
   return (
@@ -64,6 +72,13 @@ export default function MedicineSearch({ onFindNearby }: { onFindNearby: () => v
           />
           Generic savings only
         </label>
+        <button
+          onClick={() => setCartOpen(true)}
+          className="btn-secondary text-xs flex items-center gap-1.5"
+        >
+          <ShoppingCart className="w-3.5 h-3.5" />
+          <span className={cn(lang === "bn" && "font-bangla")}>{t("cart.title")}</span>
+        </button>
       </div>
 
       <div className="mt-4 grid sm:grid-cols-2 gap-3 max-h-[480px] overflow-y-auto pr-1">
@@ -111,8 +126,7 @@ export default function MedicineSearch({ onFindNearby }: { onFindNearby: () => v
                   <div className="mt-2 card-surface p-2.5 border-teal-900 text-xs animate-fade-in">
                     <p className="text-teal-300 font-semibold flex items-center gap-1.5">
                       <BadgePercent className="w-3.5 h-3.5" /> Generic: {m.genericName} — ৳
-                      {m.genericPrice}{" "}
-                      <span className="text-teal-400">({savings}% cheaper)</span>
+                      {m.genericPrice} <span className="text-teal-400">({savings}% cheaper)</span>
                     </p>
                     <p className="text-slate-400 mt-1">
                       Same active ingredient, DGDA-approved bioequivalent.
@@ -129,11 +143,12 @@ export default function MedicineSearch({ onFindNearby }: { onFindNearby: () => v
                     Generic −{savings}%
                   </button>
                   <button
-                    onClick={() => order(m)}
+                    onClick={() => add(m)}
                     disabled={!m.inStock}
                     className="btn-primary text-[11px] py-1 px-2.5"
                   >
-                    <Truck className="w-3 h-3 inline mr-1" /> Order Delivery
+                    <ShoppingCart className="w-3 h-3 inline mr-1" />
+                    <span className={cn(lang === "bn" && "font-bangla")}>{t("cart.addToCart")}</span>
                   </button>
                   <button onClick={onFindNearby} className="btn-secondary text-[11px] py-1 px-2.5">
                     <MapPin className="w-3 h-3 inline mr-1" /> Find Nearby
@@ -143,37 +158,6 @@ export default function MedicineSearch({ onFindNearby }: { onFindNearby: () => v
             );
           })}
       </div>
-
-      {/* medicine reminder mock */}
-      {reminderFor && (
-        <div className="mt-4 card-surface p-4 border-teal-900 animate-slide-up">
-          <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-            <BellRing className="w-4 h-4 text-teal-400" /> Set up medication reminder for{" "}
-            {reminderFor.brandName}?
-          </p>
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            <select className="input-dark text-xs" defaultValue="3x daily">
-              <option>1x daily</option>
-              <option>2x daily</option>
-              <option>3x daily</option>
-            </select>
-            <input type="date" className="input-dark text-xs" defaultValue={new Date().toISOString().slice(0, 10)} />
-            <button
-              onClick={() => {
-                pushToast({
-                  title: "Reminder scheduled",
-                  message: "You will receive SMS at 8:00, 14:00, 20:00 daily",
-                  variant: "success",
-                });
-                setReminderFor(null);
-              }}
-              className="btn-primary text-xs"
-            >
-              Send via SMS
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

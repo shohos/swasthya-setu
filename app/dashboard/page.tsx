@@ -214,7 +214,7 @@ export default function DashboardPage() {
                 </Section>
               )}
 
-              <Section title="Claude Clinical Summary (EN)">
+              <Section title="AI Clinical Summary (EN)">
                 <p className="text-sm text-slate-300 leading-relaxed">{selected.aiSummaryEn}</p>
               </Section>
 

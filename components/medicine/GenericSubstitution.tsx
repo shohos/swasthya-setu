@@ -50,7 +50,7 @@ export default function GenericSubstitution() {
         <Sparkles className="w-5 h-5 text-teal-400" /> Generic Substitution AI
       </h3>
       <p className="text-xs text-slate-400 mt-1">
-        Claude explains why the generic equivalent is medically identical — and how much you save.
+        Gemini explains why the generic equivalent is medically identical — and how much you save.
       </p>
 
       <form onSubmit={check} className="flex gap-2 mt-3">
@@ -67,7 +67,7 @@ export default function GenericSubstitution() {
 
       {busy && (
         <div className="mt-4">
-          <AIThinking label="Claude is checking bioequivalence" />
+          <AIThinking label="Gemini is checking bioequivalence" />
         </div>
       )}
 

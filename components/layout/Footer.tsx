@@ -1,6 +1,11 @@
+"use client";
+
 import { HeartPulse, Code2 } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 export default function Footer() {
+  const { t, lang } = useT();
   return (
     <footer className="border-t border-edge bg-panel mt-16">
       <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center gap-4 text-sm text-slate-400">
@@ -10,11 +15,8 @@ export default function Footer() {
           <span className="font-bangla">স্বাস্থ্য সেতু</span>
         </div>
         <span className="hidden md:inline text-edge">|</span>
-        <span>HealthTech Track — Telehealth Offline System</span>
+        <span className={cn(lang === "bn" && "font-bangla")}>{t("footer.tagline")}</span>
         <span className="md:ml-auto inline-flex items-center gap-3">
-          <span className="px-2 py-0.5 rounded-full bg-teal-600/20 border border-teal-700 text-teal-300 text-xs font-semibold">
-            THE INFINITY AI BUILDFEST 2026
-          </span>
           <a
             href="https://github.com"
             target="_blank"

@@ -2,28 +2,41 @@
 
 import { useState } from "react";
 import CameraCapture from "@/components/screening/CameraCapture";
-import JaundiceResult from "@/components/screening/JaundiceResult";
+import ScreeningResultCard from "@/components/screening/ScreeningResultCard";
+import ScreeningTabs from "@/components/screening/ScreeningTabs";
 import AIThinking from "@/components/shared/AIThinking";
 import { drawEyeSample } from "@/components/screening/sample-images";
+import { computeColorIndex } from "@/components/screening/color-index";
+import type { ScreeningResult } from "@/lib/vision";
 import { Droplets, CheckCircle2, XCircle } from "lucide-react";
 
 export default function JaundiceScreeningPage() {
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [done, setDone] = useState(false);
+  const [result, setResult] = useState<ScreeningResult | null>(null);
 
-  function analyze(dataUrl: string) {
+  async function analyze(dataUrl: string) {
     setImage(dataUrl);
-    setDone(false);
+    setResult(null);
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
-      setDone(true);
-    }, 2200);
+    try {
+      // On-device color analysis first — runs even fully offline.
+      const colorIndex = await computeColorIndex(dataUrl, "jaundice");
+      const res = await fetch("/api/screening", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl, type: "jaundice", colorIndex }),
+      });
+      setResult(await res.json());
+    } catch {
+      setResult(null);
+    }
+    setAnalyzing(false);
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <ScreeningTabs />
       <div className="flex items-center gap-3 mb-5">
         <span className="p-2.5 rounded-xl bg-amber-600/15 border border-amber-800">
           <Droplets className="w-6 h-6 text-amber-400" />
@@ -31,7 +44,8 @@ export default function JaundiceScreeningPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-100">Jaundice Screening (Computer Vision)</h1>
           <p className="text-sm text-slate-400">
-            Bilirubin estimate from scleral yellowing — on-device TFLite in production.
+            Bilirubin estimate from scleral yellowing — on-device color analysis verified by
+            Roboflow CLIP zero-shot AI.
           </p>
         </div>
       </div>
@@ -81,8 +95,8 @@ export default function JaundiceScreeningPage() {
             guideColor="#fbbf24"
           />
           <p className="text-[11px] text-slate-500 mt-3">
-            Demo note: webcam captures return a representative mock result — in the field this
-            would run the TFLite model on-device.
+            The scleral yellowness index is computed on-device; Roboflow CLIP adds a zero-shot
+            icterus check. Without a Roboflow key the on-device index alone is used.
           </p>
         </div>
 
@@ -91,12 +105,12 @@ export default function JaundiceScreeningPage() {
             Result
           </h3>
           {analyzing && <AIThinking label="Analyzing scleral icterus" />}
-          {!analyzing && !done && (
+          {!analyzing && !result && (
             <div className="panel p-6 text-center text-slate-500 text-sm">
               Capture or load a sample image to run screening.
             </div>
           )}
-          {done && image && <JaundiceResult image={image} />}
+          {!analyzing && result && image && <ScreeningResultCard image={image} result={result} />}
         </div>
       </div>
     </div>

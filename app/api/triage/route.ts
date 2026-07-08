@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { askClaudeJSON, hasApiKey } from "@/lib/claude";
+import { askGeminiJSON, hasGeminiKey } from "@/lib/gemini";
 import { TRIAGE_SYSTEM_PROMPT } from "@/lib/triage-prompts";
 import { getFallbackTriage, TriageResult } from "@/lib/mock-responses";
 import prisma from "@/lib/db";
@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
   }
 
   let result: TriageResult;
-  if (hasApiKey()) {
+  if (hasGeminiKey()) {
     try {
-      result = await askClaudeJSON<TriageResult>(
+      result = await askGeminiJSON<TriageResult>(
         TRIAGE_SYSTEM_PROMPT,
         `Patient intake via ${channel}.\n\nTranscript:\n${transcript}\n\nStructured answers:\n${JSON.stringify(
           body.rawAnswers ?? {},
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         )}`
       );
     } catch (err) {
-      console.error("Triage Claude call failed, using fallback:", err);
+      console.error("Triage Gemini call failed, using fallback:", err);
       result = getFallbackTriage(transcript);
     }
   } else {

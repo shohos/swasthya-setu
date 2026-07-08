@@ -45,22 +45,56 @@ model Case {
 }
 
 model Doctor {
-  id          String  @id @default(cuid())
-  name        String
-  nameBn      String
-  specialty   String
-  specialtyBn String
-  facility    String
-  facilityBn  String
-  upazila     String
-  district    String
-  lat         Float
-  lng         Float
-  phone       String
-  fee         Int
-  available   Boolean @default(true)
-  rating      Float   @default(4.2)
-  teleconsult Boolean @default(true)
+  id           String        @id @default(cuid())
+  name         String
+  nameBn       String
+  specialty    String
+  specialtyBn  String
+  facility     String
+  facilityBn   String
+  upazila      String
+  district     String
+  lat          Float
+  lng          Float
+  phone        String
+  fee          Int
+  available    Boolean       @default(true)
+  rating       Float         @default(4.2)
+  teleconsult  Boolean       @default(true)
+  appointments Appointment[]
+}
+
+model Appointment {
+  id            String   @id @default(cuid())
+  doctorId      String
+  doctor        Doctor   @relation(fields: [doctorId], references: [id])
+  patientName   String
+  patientPhone  String
+  reason        String
+  type          String   @default("VIDEO") // VIDEO | IN_PERSON
+  scheduledAt   DateTime
+  durationMin   Int      @default(30)
+  fee           Int
+  paymentMethod String   @default("bKash")
+  paymentStatus String   @default("PAID")
+  status        String   @default("CONFIRMED") // CONFIRMED | COMPLETED | CANCELLED
+  notes         String?
+  prescription  String? // JSON array
+  createdAt     DateTime @default(now())
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  items         String // JSON [{name, strength, qty, price}]
+  subtotal      Float
+  deliveryFee   Float
+  total         Float
+  customerName  String
+  phone         String
+  address       String
+  paymentMethod String   @default("bKash")
+  status        String   @default("CONFIRMED")
+  createdAt     DateTime @default(now())
 }
 
 model Medicine {

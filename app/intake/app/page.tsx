@@ -13,7 +13,7 @@ export default function AppIntakePage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-100">App-Based Intake (CHW Mode)</h1>
           <p className="text-sm text-slate-400">
-            Structured intake used by Community Health Workers — same Claude triage pipeline as
+            Structured intake used by Community Health Workers — same Gemini triage pipeline as
             voice and SMS.
           </p>
         </div>
